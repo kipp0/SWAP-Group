@@ -44,7 +44,7 @@ float lastY = std::numeric_limits<float>::infinity();
 
 static void createGeometry(void) {
   ObjMesh mesh;
-  mesh.load("logo.obj", true, true);
+  mesh.load("meshes/house.obj", true, true);
 
   numVertices = mesh.getNumIndexedVertices();
   Vector3* vertexPositions = mesh.getIndexedPositions();
