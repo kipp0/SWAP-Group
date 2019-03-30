@@ -42,14 +42,24 @@ float lastX = std::numeric_limits<float>::infinity();
 float lastY = std::numeric_limits<float>::infinity();
 
 
+// skybox stuff
+
+
 static void createGeometry(void) {
   ObjMesh mesh;
-  mesh.load("meshes/house.obj", true, true);
+  ObjMesh mesh2;
+  mesh.load("logo.obj", true, true);
+  mesh2.load("logo.obj", true, true);
 
   numVertices = mesh.getNumIndexedVertices();
   Vector3* vertexPositions = mesh.getIndexedPositions();
   Vector2* vertexTextureCoords = mesh.getIndexedTextureCoords();
   Vector3* vertexNormals = mesh.getIndexedNormals();
+  
+  numVertices = mesh2.getNumIndexedVertices();
+  Vector3* vertexPositions2 = mesh2.getIndexedPositions();
+  Vector2* vertexTextureCoords2 = mesh2.getIndexedTextureCoords();
+  Vector3* vertexNormals2 = mesh2.getIndexedNormals();
 
   glGenBuffers(1, &positions_vbo);
   glBindBuffer(GL_ARRAY_BUFFER, positions_vbo);
@@ -62,21 +72,41 @@ static void createGeometry(void) {
   glGenBuffers(1, &normals_vbo);
   glBindBuffer(GL_ARRAY_BUFFER, normals_vbo);
   glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vector3), vertexNormals, GL_STATIC_DRAW);
+  
+  glGenBuffers(1, &positions_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, positions_vbo);
+  glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vector3), vertexPositions2, GL_STATIC_DRAW);
+
+  glGenBuffers(1, &textureCoords_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, textureCoords_vbo);
+  glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vector2), vertexTextureCoords2, GL_STATIC_DRAW);
+
+  glGenBuffers(1, &normals_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, normals_vbo);
+  glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vector3), vertexNormals2, GL_STATIC_DRAW);
 
   unsigned int* indexData = mesh.getTriangleIndices();
   int numTriangles = mesh.getNumTriangles();
+  
+  unsigned int* indexData2 = mesh2.getTriangleIndices();
+  int numTriangles2 = mesh2.getNumTriangles();
 
   glGenBuffers(1, &indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * numTriangles * 3, indexData, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * numTriangles * 3 * 2, indexData, GL_STATIC_DRAW);
 }
 
 static void update(void) {
     int milliseconds = glutGet(GLUT_ELAPSED_TIME);
-
+    
+    if (angle >= 320) {
+        rotateObject = false;
+    }
     // rotate the shape about the y-axis so that we can see the shading
     if (rotateObject) {
-      float degrees = (float)milliseconds / 80.0f;
+        
+        
+      float degrees = (float)milliseconds / 20.0f;
       angle = degrees;
     }
 
@@ -85,7 +115,16 @@ static void update(void) {
       float t = milliseconds / 1000.0f;
       lightOffsetY = sinf(t) * 100;
     }
-
+    
+    if (scaleFactor <= 35.0f) {
+      scaleFactor = 5.0f + (float)milliseconds / 80.0f;
+    }
+    
+    if (eyePosition.y >= -5.0f) {
+        eyePosition.y = 50.0f - (float)milliseconds / 80.0f;
+    }
+    
+    
     glutPostRedisplay();
 }
 
@@ -126,7 +165,10 @@ static void render(void) {
   // model matrix: translate, scale, and rotate the model
   glm::vec3 rotationAxis(0,1,0);
   glm::mat4 model = glm::mat4(1.0f);
-  //model = glm::translate(model, glm::vec3(-6.0f, -2.0f, 1.0));
+  
+  model = glm::translate(model, glm::vec3(3.0f, -2.0f, 1.0));
+  model = glm::translateB(model, glm::vec3(3.0f, -2.0f, 1.0));
+  
   model = glm::rotate(model, glm::radians(angle), glm::vec3(0, 1, 0)); // rotate about the y-axis
   model = glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
 
@@ -154,7 +196,7 @@ static void render(void) {
 
   // the shininess of the object's surface
   GLuint shininessId = glGetUniformLocation(programId, "u_Shininess");
-  glUniform1f(shininessId, 25);
+  glUniform1f(shininessId, 10000);
 
   // find the names (ids) of each vertex attribute
   GLint positionAttribId = glGetAttribLocation(programId, "position");
@@ -254,8 +296,9 @@ int main(int argc, char** argv) {
 
     createGeometry();
     ShaderProgram program;
-    //program.loadShaders("shaders/gouraud_vertex.glsl", "shaders/gouraud_fragment.glsl");
-    program.loadShaders("shaders/phong_vertex.glsl", "shaders/phong_fragment.glsl");
+    
+    program.loadShaders("shaders/proc_marble_vertex.glsl", "shaders/proc_marble_fragment.glsl");
+    //program.loadShaders("shaders/phong_vertex.glsl", "shaders/phong_fragment.glsl");
   	programId = program.getProgramId();
 
     glutMainLoop();
